@@ -1,0 +1,2 @@
+﻿C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\Microsoft.CppBuild.targets(1280,5): warning MSB8012: TargetName(WinsockClient\Debug) does not match the Linker's OutputFile property value (Debug). This may cause your project to build incorrectly. To correct this, please make sure that $(OutDir), $(TargetName) and $(TargetExt) property values match the value specified in %(Link.OutputFile).
+  WinsockClient.vcxproj -> F:\Visual Studio Projects\SocketPrograming\WinsockBasic\\Debug\Win32\WinsockClient\Debug.exe

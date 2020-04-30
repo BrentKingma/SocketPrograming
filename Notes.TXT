@@ -1,0 +1,17 @@
+-------------------------------------------------------
+THE FOLLOWING IS FOR TCP/IP SERVER-CLIENT RELATIONSHIPS
+-------------------------------------------------------
+Server:
+1-Initialize Winsock
+2-Create Socket
+3-Bind Socket
+4-Listen for Client
+5-Accept Client connnection
+6-Send Receive data
+7-Disconnect
+Client:
+1-Initialize Winsock
+2-Create Socket
+3-Connect to server
+4-Send Receive data
+5-Disconnect
