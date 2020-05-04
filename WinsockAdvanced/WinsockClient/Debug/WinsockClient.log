@@ -1,3 +1,5 @@
 ﻿  Client.cpp
+  WinsockClient.cpp
+  Generating Code...
 F:\Visual Studio Projects\SocketPrograming\WinsockAdvanced\WinsockClient\Client.cpp(84): warning C4715: 'WinsockAdvanced::Client::Connect': not all control paths return a value
   WinsockClient.vcxproj -> F:\Visual Studio Projects\SocketPrograming\WinsockAdvanced\Debug\WinsockClient.exe

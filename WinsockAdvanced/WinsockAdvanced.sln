@@ -5,6 +5,8 @@ VisualStudioVersion = 16.0.30011.22
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WinsockClient", "WinsockClient\WinsockClient.vcxproj", "{05247573-0AA3-47CB-B709-2BD2C5F792B1}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WinsockServer", "WinsockServer\WinsockServer.vcxproj", "{CAABC91B-2077-4992-9C8F-1EEEBB304F0E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -21,6 +23,14 @@ Global
 		{05247573-0AA3-47CB-B709-2BD2C5F792B1}.Release|x64.Build.0 = Release|x64
 		{05247573-0AA3-47CB-B709-2BD2C5F792B1}.Release|x86.ActiveCfg = Release|Win32
 		{05247573-0AA3-47CB-B709-2BD2C5F792B1}.Release|x86.Build.0 = Release|Win32
+		{CAABC91B-2077-4992-9C8F-1EEEBB304F0E}.Debug|x64.ActiveCfg = Debug|x64
+		{CAABC91B-2077-4992-9C8F-1EEEBB304F0E}.Debug|x64.Build.0 = Debug|x64
+		{CAABC91B-2077-4992-9C8F-1EEEBB304F0E}.Debug|x86.ActiveCfg = Debug|Win32
+		{CAABC91B-2077-4992-9C8F-1EEEBB304F0E}.Debug|x86.Build.0 = Debug|Win32
+		{CAABC91B-2077-4992-9C8F-1EEEBB304F0E}.Release|x64.ActiveCfg = Release|x64
+		{CAABC91B-2077-4992-9C8F-1EEEBB304F0E}.Release|x64.Build.0 = Release|x64
+		{CAABC91B-2077-4992-9C8F-1EEEBB304F0E}.Release|x86.ActiveCfg = Release|Win32
+		{CAABC91B-2077-4992-9C8F-1EEEBB304F0E}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -2,11 +2,11 @@
 #include <WS2tcpip.h>
 #include <stdio.h>
 #include <thread>
-#include <vector>
+#include <queue>
 
 #pragma comment(lib, "Ws2_32.lib")
 
-#define DEFAULT_BUFFER_LEN 512
+#define DEFAULT_BUFFER_LEN 144
 
 namespace WinsockAdvanced
 {
@@ -21,7 +21,7 @@ namespace WinsockAdvanced
 
 		int iResult;
 
-		std::vector<const char*> sendBuffer;
+		std::queue<const char*> sendBuffer;
 
 		bool runThreads;
 

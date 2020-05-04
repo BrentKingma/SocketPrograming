@@ -8,7 +8,7 @@ namespace WinsockAdvanced
 		result = NULL;
 		ptr = NULL;
 		runThreads = true;
-		sendBuffer = std::vector<const char*>();
+		sendBuffer = std::queue<const char*>();
 	}
 	Client::~Client()
 	{
@@ -17,7 +17,7 @@ namespace WinsockAdvanced
 
 	void Client::AddMessage(const char* message)
 	{
-		sendBuffer.push_back(message);
+		sendBuffer.push(message);
 	}
 
 	int Client::Initialize()
@@ -117,8 +117,8 @@ namespace WinsockAdvanced
 		{
 			if (!sendBuffer.empty())
 			{
-				const char* sendbuf = sendBuffer.back();
-				sendBuffer.pop_back();
+				const char* sendbuf = sendBuffer.front();
+				sendBuffer.pop();
 				sendResult = send(connectSocket, sendbuf, (int)strlen(sendbuf), 0);
 				if (sendResult == SOCKET_ERROR)
 				{
@@ -129,7 +129,7 @@ namespace WinsockAdvanced
 			}
 			else
 			{
-				std::this_thread::sleep_for(std::chrono::seconds(5));
+				//std::this_thread::sleep_for(std::chrono::seconds(5));
 			}
 		} while (runThreads);
 	}
@@ -143,7 +143,7 @@ namespace WinsockAdvanced
 			receiveResult = recv(connectSocket, recvbuf, recvbuflen, 0);
 			if (receiveResult > 0)
 			{
-				printf("Bytes received: %d\n", receiveResult);
+				printf("Bytes received: %d\n", recvbuf);
 			}
 			else if (receiveResult == 0)
 			{
