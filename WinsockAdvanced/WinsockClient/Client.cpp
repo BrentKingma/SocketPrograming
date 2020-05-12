@@ -143,7 +143,7 @@ namespace WinsockAdvanced
 			receiveResult = recv(connectSocket, recvbuf, recvbuflen, 0);
 			if (receiveResult > 0)
 			{
-				printf("Bytes received: %d\n", recvbuf);
+				printf("Bytes received: %s\n", recvbuf);
 			}
 			else if (receiveResult == 0)
 			{

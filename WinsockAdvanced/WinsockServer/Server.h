@@ -7,6 +7,7 @@
 #include <string>
 #include <sstream>
 
+#include "Client.h"
 
 #pragma comment(lib, "Ws2_32.lib")
 
@@ -15,6 +16,7 @@
 
 namespace AdvancedWinsock
 {
+
 	class Server
 	{
 	private:
@@ -28,11 +30,15 @@ namespace AdvancedWinsock
 		bool runServer;
 
 		std::thread listenThread;
-		std::map<int, SOCKET> clients;
+		std::thread clientRegisterThread;
+
+		std::map<int, Client*> clients;
 		std::map<int, std::thread> clientReceiverThreads;
 		std::map<int, std::thread> clientSenderThreads;
 		std::map<int, std::queue<const char*>> clientSendQueues;
+
 		std::queue<int>idQueue;
+		std::queue<Client*>clientsToRegister;
 
 		struct addrinfo* result, * ptr, hints;
 	public:
@@ -48,7 +54,7 @@ namespace AdvancedWinsock
 		int StopListen();
 
 	private:
-		int AddClient(SOCKET client, SOCKADDR_IN clientInfo);
+		int RegisterClient(Client* client);
 	};
 }
 

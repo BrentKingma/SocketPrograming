@@ -1,8 +1,3 @@
 ﻿  Client.cpp
-F:\Visual Studio Projects\SocketPrograming\WinsockAdvanced\WinsockClient\Client.cpp(146,12): warning C4477: 'printf' : format string '%d' requires an argument of type 'int', but variadic argument 1 has type 'char *'
-F:\Visual Studio Projects\SocketPrograming\WinsockAdvanced\WinsockClient\Client.cpp(146,12): warning C4313: 'printf': '%d' in format string conflicts with argument 1 of type 'char *'
-  WinsockClient.cpp
-F:\Visual Studio Projects\SocketPrograming\WinsockAdvanced\WinsockClient\WinsockClient.cpp(34,35): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-  Generating Code...
 F:\Visual Studio Projects\SocketPrograming\WinsockAdvanced\WinsockClient\Client.cpp(84): warning C4715: 'WinsockAdvanced::Client::Connect': not all control paths return a value
   WinsockClient.vcxproj -> F:\Visual Studio Projects\SocketPrograming\WinsockAdvanced\x64\Debug\WinsockClient.exe
