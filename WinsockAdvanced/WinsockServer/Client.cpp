@@ -2,59 +2,72 @@
 
 namespace AdvancedWinsock
 {
-	Client::Client(){}
-	Client::Client(SOCKET socket, SOCKADDR_IN info)
+	Client::Client()
+	{
+		mySocket = INVALID_SOCKET;
+		sendMessageQueue = std::queue<std::string>();
+		isActive = false;
+		disconnected = false;
+		id = 0;
+	}
+	Client::Client(SOCKET socket, int clientID)
 	{
 		mySocket = socket;
-		myInfo = info;
-		sendMessageQueue = std::queue<const char*>();
+		sendMessageQueue = std::queue<std::string>();
+		messagesToSend = std::queue<Message>();
 		isActive = true;
-		registered = false;
-		id = ((int)myInfo.sin_addr.S_un.S_un_b.s_b1 * (int)myInfo.sin_addr.S_un.S_un_b.s_b2 + (int)myInfo.sin_addr.S_un.S_un_b.s_b3 * (int)myInfo.sin_addr.S_un.S_un_b.s_b4) * 2 - 72;
+		disconnected = false;
+		id = clientID;
 
-		const char* idChar = IntToChar(id);
+		std::string idChar = IntToString(id);
 
 		sendMessageQueue.push(idChar);
 	}
 
 	Client::~Client()
 	{
-		closesocket(mySocket);
-		if (registered)
-		{
-			receiver.join();
-			sender.join();
-		}
+		
 	}
 
 	void Client::Registered()
 	{
 		printf("Client ID %d Joined\n", id);
-		registered = true;
 		
 		StartThreads();
 	}
 
-	void Client::addToQueue(const char* message)
+	void Client::addToQueue(std::string message)
 	{
 		sendMessageQueue.push(message);
 	}
 
-	void Client::Reconnect(SOCKET socket, SOCKADDR_IN info)
+	void Client::Reconnect(SOCKET socket)
 	{
-		Disconnect();
-
 		mySocket = socket;
-		myInfo = info;
+
+		isActive = true;
+		disconnected = false;
 
 		StartThreads();
 	}
 
 	void Client::Disconnect()
 	{
+		isActive = false;
+
 		closesocket(mySocket);
-		receiver.join();
-		sender.join();
+		
+		mySocket = INVALID_SOCKET;
+
+		if (receiver.joinable())
+		{
+			receiver.join();
+		}
+		if (sender.joinable())
+		{
+			sender.join();
+		}
+		disconnected = false;
 	}
 
 	void Client::StartThreads()
@@ -63,28 +76,54 @@ namespace AdvancedWinsock
 		receiver = std::thread([this]() {
 			while (isActive)
 			{
-				ZeroMemory(recvbuf, DEFAULT_BUFFLEN);
-				recvResult = recv(mySocket, recvbuf, DEFAULT_BUFFLEN, 0);
-				if (recvResult > 0)
+				if (mySocket != INVALID_SOCKET && !disconnected)
 				{
-					//Cleans message
-					for (int i = DEFAULT_BUFFLEN - 1; i >= 0; i--)
+					ZeroMemory(recvbuf, DEFAULT_BUFFLEN);
+					recvResult = recv(mySocket, recvbuf, DEFAULT_BUFFLEN, 0);
+					printf("Receiveing message: %s\n", recvbuf);
+					if (recvResult > 0)
 					{
-						if (recvbuf[i] == 'Ì')
+						//Cleans message
+						for (int i = DEFAULT_BUFFLEN - 1; i >= 0; i--)
 						{
-							recvbuf[i] = NULL;
+							if (recvbuf[i] == 'Ì')
+							{
+								recvbuf[i] = NULL;
+							}
+						}
+						messageTemp = recvbuf;
+						if (messageTemp[0] == '!')
+						{
+							std::string command = messageTemp.substr(0, messageTemp.find("#"));
+							messageTemp.erase(0, messageTemp.find("#") + 1);
+							Message message = Message(id, 0, command, messageTemp);
+							messagesToSend.push(message);
+						}
+						else
+						{
+							int toId = std::stoi(messageTemp.substr(0, messageTemp.find("#")));
+							messageTemp.erase(0, messageTemp.find("#") + 1);
+							Message message = Message(id, toId, "", messageTemp);
+							messagesToSend.push(message);
+						}
+						printf("Message: %s\n", recvbuf);
+					}
+					else if (recvResult == 0)
+					{
+						printf("ID: %d disconnected\n", id);
+						if (disconnected == false)
+						{
+							disconnected = true;
 						}
 					}
-					printf("Message: %s\n", recvbuf);
-				}
-				else if (recvResult == 0)
-				{
-					printf("ID: %d disconnected\n", id);
-
-				}
-				else
-				{
-					printf("recv failed: %d\n", WSAGetLastError());
+					else
+					{
+						printf("recv failed: %d\n", WSAGetLastError());
+						if (disconnected == false)
+						{
+							disconnected = true;
+						}
+					}
 				}
 			}
 			});
@@ -92,25 +131,47 @@ namespace AdvancedWinsock
 		sender = std::thread([this]() {
 			while (isActive)
 			{
-				//Only send if queue contains something
-				if (!sendMessageQueue.empty())
+				if (mySocket != INVALID_SOCKET && !disconnected)
 				{
-					sendResult = send(mySocket, sendMessageQueue.front(), sizeof(sendMessageQueue.front()), 0);
-					if (sendResult == SOCKET_ERROR)
+					//Only send if queue contains something
+					if (!sendMessageQueue.empty())
 					{
-						printf("send failed: %d\n", WSAGetLastError());
+						const char* message = sendMessageQueue.front().c_str();
+						sendResult = send(mySocket, message, DEFAULT_BUFFLEN, 0);
+						if (sendResult == SOCKET_ERROR)
+						{
+							printf("send failed: %d\n", WSAGetLastError());
+						}
+						else
+						{
+							printf("message sent: %d\n", sendResult);
+							sendMessageQueue.pop();
+						}
 					}
 					else
 					{
-						printf("message sent: %d\n", sendResult);
-						sendMessageQueue.pop();
+						std::this_thread::sleep_for(std::chrono::seconds(1));
 					}
-				}
-				else
-				{
-					std::this_thread::sleep_for(std::chrono::seconds(1));
 				}
 			}
 			});
+	}
+
+	bool Client::ContainMessage()
+	{
+		if (messagesToSend.size() > 0)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	Message Client::GetReceivedMessage()
+	{
+		auto temp = messagesToSend.front();
+		messagesToSend.pop();
+		return temp;
 	}
 }

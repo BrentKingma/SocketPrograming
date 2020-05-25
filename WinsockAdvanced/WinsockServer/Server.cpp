@@ -8,16 +8,38 @@ namespace AdvancedWinsock
 		result = NULL;
 		ptr = NULL;
 		runServer = true;
-		recvbuflen = DEFAULT_BUFFLEN;
 
 		clients = std::map<int, Client*>();
-		clientReceiverThreads = std::map<int, std::thread>();
-		clientSenderThreads = std::map<int, std::thread>();
-		clientSendQueues = std::map<int, std::queue<const char*>>();
+
+		currentOnlineIDs = std::vector<int>();
+
+		messagesToSort = std::queue<Message>();
 	}
 	Server::~Server()
 	{
 
+	}
+
+	void Server::Tick()
+	{
+		if (clients.size() > 0)
+		{
+			for (auto const& x : clients)
+			{
+				if (x.second->disconnected)
+				{
+					printf("Client has disconnected\n");
+					x.second->Disconnect();
+					int id = x.first;
+					currentOnlineIDs.erase(std::remove(currentOnlineIDs.begin(), currentOnlineIDs.end(), id));
+					break; //One disconnect per tick
+				}
+				if (x.second->ContainMessage())
+				{
+					messagesToSort.push(x.second->GetReceivedMessage());
+				}
+			}
+		}
 	}
 
 	int Server::Initialize()
@@ -82,16 +104,40 @@ namespace AdvancedWinsock
 
 	int Server::StartListen()
 	{
-		clientRegisterThread = std::thread([this]() {
+		//Sort through messages from clients
+		messageHandler = std::thread([this]() {
 			while (runServer)
 			{
-				if (!clientsToRegister.empty())
+				if (messagesToSort.size() > 0)
 				{
-
-				}
-				else
-				{
-					std::this_thread::sleep_for(std::chrono::seconds(1));
+					if (messagesToSort.front().command != "")
+					{
+						std::string command = messagesToSort.front().command;
+						//Commands
+						if (command == "!online")
+						{
+							std::string message;
+							for (int i = 0; i < currentOnlineIDs.size(); i++)
+							{
+								if (currentOnlineIDs[i] != messagesToSort.front().fromID)
+								{
+									message += std::to_string(currentOnlineIDs[i]) + "\n";
+								}
+							}
+							clients[messagesToSort.front().fromID]->addToQueue(message);
+						}
+						if (command == "!isClient")
+						{
+							bool exists = clients.find(std::stoi(messagesToSort.front().message)) != clients.end() ? true : false;
+							clients[messagesToSort.front().fromID]->addToQueue(exists ? "Exists" : "Doesn't Exist");
+						}
+					}
+					else
+					{
+						std::string message = std::to_string(messagesToSort.front().fromID) + ": " + messagesToSort.front().message;
+						clients[messagesToSort.front().toID]->addToQueue(message);
+					}
+					messagesToSort.pop();
 				}
 			}
 			});
@@ -102,10 +148,8 @@ namespace AdvancedWinsock
 				SOCKADDR_IN client_info = { 0 };
 				int addresSize = sizeof(client_info);
 				clientSocket = accept(listenSocket, (struct sockaddr*)&client_info, &addresSize);
-
-				Client* client = new Client(clientSocket, client_info);
-				
-				RegisterClient(client);
+				printf("Registring Client\n");
+				RegisterClient(clientSocket, client_info);
 			}
 			});
 		return 0;
@@ -137,119 +181,23 @@ namespace AdvancedWinsock
 		return 0;
 	}
 
-	int Server::RegisterClient(Client* client)
+	int Server::RegisterClient(UINT_PTR socket, SOCKADDR_IN socketInfo)
 	{
-		if (clients.find(client->id) == clients.end())
+		int id = ((int)socketInfo.sin_addr.S_un.S_un_b.s_b1 * (int)socketInfo.sin_addr.S_un.S_un_b.s_b2 + (int)socketInfo.sin_addr.S_un.S_un_b.s_b3 * (int)socketInfo.sin_addr.S_un.S_un_b.s_b4) * 2 - 72;
+		if (clients.find(id) == clients.end())
 		{
+			printf("Client has not been registered before, create new intake\n");
 			//Client has not been registered
+			Client* client = new Client(socket, id);			
 			clients[client->id] = client;
 			client->Registered();
 		}
 		else
 		{
-			//clients[client->id]->mySocket = client->mySocket;
-			clients[client->id]->Reconnect(client->mySocket, client->myInfo);
-			delete client;
+			printf("Client has been registered before, reconnecting\n");
+			clients[id]->Reconnect(socket);
 		}
-		//clients[id] = client;
-		//clientSendQueues[id] = std::queue<const char*>();
-		//clientReceiverThreads[id] = std::thread([this, id]() { StartClientRecvThread(id); });			
-		//clientSenderThreads[id] = std::thread([this, id]() { StartClientSendThread(id); });
+		currentOnlineIDs.push_back(id);
 		return 0;
-	}
-
-	//void Server::StartClientSendThread(int id)
-	//{
-	//	int sendResult;
-	//	SOCKET mySocket = clients[id];
-	//	sendResult = send(mySocket, (char*)id, sizeof(id), 0);
-	//	do
-	//	{
-	//		if (!clientSendQueues[id].empty())
-	//		{
-	//			// Echo the buffer back to the sender
-	//			sendResult = send(mySocket, clientSendQueues[id].front(), sizeof(clientSendQueues[id].front()), 0);
-	//			if (sendResult == SOCKET_ERROR)
-	//			{
-	//				printf("send failed: %d\n", WSAGetLastError());
-	//			}
-	//			else
-	//			{
-	//				clientSendQueues[id].pop();
-	//			}
-	//		}
-	//		else
-	//		{
-	//			std::this_thread::sleep_for(std::chrono::seconds(1));
-	//		}
-	//	}
-	//	while (runServer);
-	//}
-
-	//void Server::StartClientRecvThread(int id)
-	//{
-	//	char recvbuf[DEFAULT_BUFFLEN];
-	//	int myID = id;
-	//	SOCKET myClient = clients[myID];
-
-	//	int recvResult;
-	//	do
-	//	{
-	//		ZeroMemory(recvbuf, DEFAULT_BUFFLEN);
-	//		recvResult = recv(myClient, recvbuf, recvbuflen, 0);
-	//		if (recvResult > 0)
-	//		{
-	//			for (int i = DEFAULT_BUFFLEN - 1; i >= 0; i--)
-	//			{
-	//				if (recvbuf[i] == 'Ì')
-	//				{
-	//					recvbuf[i] = NULL;
-	//				}
-	//			}
-	//			std::string idToSend = "";
-	//			for (int i = 0; i < DEFAULT_BUFFLEN; i++)
-	//			{
-	//				if ((int)recvbuf[i] == '0' || (int)recvbuf[i] == '1' || (int)recvbuf[i] == '2' || (int)recvbuf[i] == '3' || (int)recvbuf[i] == '4' || (int)recvbuf[i] == '5' || (int)recvbuf[i] == '6' || (int)recvbuf[i] == '7' || (int)recvbuf[i] == '8' || (int)recvbuf[i] == '9')
-	//				{
-	//					idToSend += recvbuf[i];
-	//					recvbuf[i] = NULL;
-	//				}
-	//				else if (recvbuf[i] == '#')
-	//				{
-	//					std::stringstream stream(idToSend);
-	//					int c_id = 0;
-	//					stream >> c_id;
-	//					if (clients.find(c_id) != clients.end())
-	//					{
-	//						clientSendQueues[c_id].push(recvbuf);
-	//						break;
-	//					}
-	//					else
-	//					{
-	//						clientSendQueues[myID].push("ID doesnt exist");
-	//						break;
-	//					}
-	//				}
-	//				else
-	//				{
-	//					clientSendQueues[myID].push("Incorrect ID");
-	//					break;
-	//				}
-	//			}
-	//		}
-	//		else if (recvResult == 0)
-	//		{
-	//			printf("ID: %d disconnected\n", myID);
-	//		}
-	//		else
-	//		{
-	//			printf("recv failed: %d\n", WSAGetLastError());
-	//			//closesocket(myClient);
-	//			//WSACleanup();
-	//		}
-
-	//	}
-	//	while (recvResult > 0 && runServer);
-	//}
-	
+	}	
 }

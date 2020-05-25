@@ -1,3 +1,6 @@
+TODO:
+-Impliment online command
+
 -------------------------------------------------------
 THE FOLLOWING IS FOR TCP/IP SERVER-CLIENT RELATIONSHIPS
 -------------------------------------------------------
@@ -15,3 +18,15 @@ Client:
 3-Connect to server
 4-Send Receive data
 5-Disconnect
+
+-------------------------------------------------------
+
+The SOCKET type is a UINT which holds the interger value of the pointer to the socket, doenst contain the actual socket.
+
+-------------------------------------------------------
+
+-TO FIX
+When retards send message without proper layout it crashes server
+When typing and message is received, they merge on console
+When incorrect id is sent with message, crashes server
+Incorrect IP crashes client

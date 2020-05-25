@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <thread>
 #include <queue>
+#include <string>
 
 #pragma comment(lib, "Ws2_32.lib")
 
@@ -21,7 +22,7 @@ namespace WinsockAdvanced
 
 		int iResult;
 
-		std::queue<const char*> sendBuffer;
+		std::queue<std::string> sendBuffer;
 
 		bool runThreads;
 
@@ -31,10 +32,10 @@ namespace WinsockAdvanced
 		Client();
 		~Client();
 
-		void AddMessage(const char* message);
+		void AddMessage(std::string message);
 
 		int Initialize();
-		int Create(const char* ip, const char* port);
+		int Create(std::string ip, const char* port);
 		int Connect();
 		int Disconnect();
 

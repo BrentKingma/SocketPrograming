@@ -8,14 +8,18 @@ namespace WinsockAdvanced
 		result = NULL;
 		ptr = NULL;
 		runThreads = true;
-		sendBuffer = std::queue<const char*>();
+		sendBuffer = std::queue<std::string>();
 	}
 	Client::~Client()
 	{
+		recvThread.join();
+		sendThread.join();
 
+		delete result;
+		delete ptr;
 	}
 
-	void Client::AddMessage(const char* message)
+	void Client::AddMessage(std::string message)
 	{
 		sendBuffer.push(message);
 	}
@@ -30,7 +34,7 @@ namespace WinsockAdvanced
 		}
 		return 0;
 	}
-	int Client::Create(const char* ip, const char* port)
+	int Client::Create(std::string ip, const char* port)
 	{
 		ZeroMemory(&hints, sizeof(hints));
 		hints.ai_family = AF_UNSPEC;
@@ -38,7 +42,7 @@ namespace WinsockAdvanced
 		hints.ai_protocol = IPPROTO_TCP;
 
 		//Resolve server address and port
-		iResult = getaddrinfo(ip, port, &hints, &result);
+		iResult = getaddrinfo(ip.c_str(), port, &hints, &result);
 		if (iResult != 0)
 		{
 			printf("getaddrinfo failed %d\n", iResult);
@@ -81,6 +85,8 @@ namespace WinsockAdvanced
 		//using lambda as this function is a non-static function
 		sendThread = std::thread([this] {this->SendThread(); });
 		recvThread = std::thread([this] {this->ReceiveThread(); });
+
+		return 0;
 	}
 	int Client::Disconnect()
 	{
@@ -106,8 +112,14 @@ namespace WinsockAdvanced
 		//cleanup
 		closesocket(connectSocket);
 		WSACleanup();
-		sendThread.join();
-		recvThread.join();
+		if (sendThread.joinable())
+		{
+			sendThread.join();
+		}
+		if (recvThread.joinable())
+		{
+			recvThread.join();
+		}
 		return 0;
 	}
 	void Client::SendThread()
@@ -115,50 +127,59 @@ namespace WinsockAdvanced
 		int sendResult;
 		do
 		{
-			if (!sendBuffer.empty())
+			if (runThreads)
 			{
-				const char* sendbuf = sendBuffer.front();
-				sendBuffer.pop();
-				sendResult = send(connectSocket, sendbuf, (int)strlen(sendbuf), 0);
-				if (sendResult == SOCKET_ERROR)
+				if (!sendBuffer.empty())
 				{
-					printf("send failed: %d\n", WSAGetLastError());
-					closesocket(connectSocket);
-					WSACleanup();
+					int size = sizeof(sendBuffer.front());
+					char* sendbuf = new(char[size]);
+					memcpy(sendbuf, sendBuffer.front().c_str(), size);
+					sendBuffer.pop();
+					sendResult = send(connectSocket, sendbuf, size, 0);
+					if (sendResult == SOCKET_ERROR)
+					{
+						printf("send failed: %d\n", WSAGetLastError());
+						closesocket(connectSocket);
+						WSACleanup();
+					}
 				}
-			}
-			else
-			{
-				//std::this_thread::sleep_for(std::chrono::seconds(5));
+				else
+				{
+					//std::this_thread::sleep_for(std::chrono::seconds(5));
+				}
 			}
 		} while (runThreads);
 	}
 	void Client::ReceiveThread()
 	{
-		int receiveResult;
+		int receiveResult = 999;
 		int recvbuflen = DEFAULT_BUFFER_LEN;
 		char recvbuf[DEFAULT_BUFFER_LEN];
 		do
 		{
-			receiveResult = recv(connectSocket, recvbuf, recvbuflen, 0);
-			if (receiveResult > 0)
+			if (runThreads)
 			{
-				printf("Bytes received: %s\n", recvbuf);
-			}
-			else if (receiveResult == 0)
-			{
-				printf("Connection closed\n");
-			}
-			else
-			{
-				int error = WSAGetLastError();
-				if (error == WSAEINTR)
+				ZeroMemory(recvbuf, DEFAULT_BUFFER_LEN);
+				receiveResult = recv(connectSocket, recvbuf, recvbuflen, 0);
+				if (receiveResult > 0)
 				{
-
+					printf("%s\n", recvbuf);
+				}
+				else if (receiveResult == 0)
+				{
+					printf("Connection closed\n");
 				}
 				else
 				{
-					printf("Receive failed: %d\n", error);
+					int error = WSAGetLastError();
+					if (error == WSAEINTR)
+					{
+
+					}
+					else
+					{
+						printf("Receive failed: %d\n", error);
+					}
 				}
 			}
 		} while (receiveResult > 0 && runThreads);

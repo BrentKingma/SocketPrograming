@@ -1,3 +1,0 @@
-﻿  Client.cpp
-F:\Visual Studio Projects\SocketPrograming\WinsockAdvanced\WinsockServer\Misc.h(7,19): warning C4244: 'return': conversion from 'double' to 'int', possible loss of data
-  WinsockServer.vcxproj -> F:\Visual Studio Projects\SocketPrograming\WinsockAdvanced\x64\Debug\WinsockServer.exe

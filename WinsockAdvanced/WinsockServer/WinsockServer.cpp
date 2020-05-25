@@ -10,7 +10,7 @@ int main()
 
     while (true)
     {
-
+        server.Tick();
     }
 }
 

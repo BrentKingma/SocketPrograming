@@ -4,15 +4,14 @@
 #include <thread>
 #include <map>
 #include <queue>
-#include <string>
-#include <sstream>
+#include <vector>
 
 #include "Client.h"
+#include "Message.h"
 
 #pragma comment(lib, "Ws2_32.lib")
 
 #define DEFAULT_PORT "25565"
-#define DEFAULT_BUFFLEN 144
 
 namespace AdvancedWinsock
 {
@@ -25,28 +24,24 @@ namespace AdvancedWinsock
 		SOCKET listenSocket;
 
 		int iResult;
-		int recvbuflen;
 
 		bool runServer;
 
 		std::thread listenThread;
-		std::thread clientRegisterThread;
+		std::thread messageHandler;
+
+		std::vector<int> currentOnlineIDs;
 
 		std::map<int, Client*> clients;
-		std::map<int, std::thread> clientReceiverThreads;
-		std::map<int, std::thread> clientSenderThreads;
-		std::map<int, std::queue<const char*>> clientSendQueues;
 
-		std::queue<int>idQueue;
-		std::queue<Client*>clientsToRegister;
+		std::queue<Message> messagesToSort;
 
 		struct addrinfo* result, * ptr, hints;
 	public:
 		Server();
 		~Server();
 
-		void StartClientRecvThread(int id);
-		void StartClientSendThread(int id);
+		void Tick();
 
 		int Initialize();
 		int Create(const char* port);
@@ -54,7 +49,7 @@ namespace AdvancedWinsock
 		int StopListen();
 
 	private:
-		int RegisterClient(Client* client);
+		int RegisterClient(UINT_PTR socket, SOCKADDR_IN socketInfo);
 	};
 }
 

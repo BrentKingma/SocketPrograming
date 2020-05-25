@@ -2,7 +2,9 @@
 #include <WS2tcpip.h>
 #include <thread>
 #include <queue>
+#include <string>
 #include "Misc.h"
+#include "Message.h"
 
 #pragma once
 
@@ -14,28 +16,35 @@ namespace AdvancedWinsock
 	{
 	public:
 		Client();
-		Client(SOCKET socket, SOCKADDR_IN info);
+		Client(SOCKET socket, int clientID);
 		~Client();
 
 		SOCKET mySocket;
 		SOCKADDR_IN myInfo;
 		int id;
 
+		bool disconnected;
+
 		void Registered();
-		void addToQueue(const char* message);
-		void Reconnect(SOCKET socket, SOCKADDR_IN info);
+		void addToQueue(std::string message);
+		void Reconnect(SOCKET socket);
 		void Disconnect();
+
+		bool ContainMessage();
+		Message GetReceivedMessage();
 
 	private:
 		bool isActive;
-		bool registered;
 
 		int recvResult;
 		int sendResult;
 
 		char recvbuf[DEFAULT_BUFFLEN];
 
-		std::queue<const char*> sendMessageQueue;
+		std::string messageTemp;
+
+		std::queue<std::string> sendMessageQueue;
+		std::queue<Message> messagesToSend;
 
 		std::thread receiver;
 		std::thread sender;
